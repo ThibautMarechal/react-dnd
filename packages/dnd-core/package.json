@@ -20,10 +20,12 @@
   "dependencies": {
     "@react-dnd/asap": "^4.0.0",
     "@react-dnd/invariant": "^2.0.0",
-    "redux": "^4.0.5"
+    "redux": "^4.0.5",
+    "uuid": "^8.3.1"
   },
   "devDependencies": {
     "@react-dnd/build": "workspace:packages/build",
+    "@types/uuid": "^8.3.0",
     "gulp": "^4.0.2",
     "react-dnd-test-backend": "portal:../backend-test"
   }

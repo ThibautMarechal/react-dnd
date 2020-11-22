@@ -8,6 +8,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend'
 import { TouchBackend } from 'react-dnd-touch-backend'
 import { isDebugMode } from '../util/isDebugMode'
 import { isTouchBackend } from '../util/isTouchBackend'
+import { isMultiWindow } from '../util/isMultiWindow'
 import { DndProvider } from 'react-dnd'
 import { PageBody } from './pagebody'
 import { Sidebar } from './sidebar'
@@ -43,6 +44,7 @@ export const Layout: React.FC<LayoutProps> = memo(function Layout(props) {
 	const hideSidebar = props.hideSidebar || sitepath === '/about'
 	const debugMode = isDebugMode()
 	const touchBackend = isTouchBackend()
+	const multiWindow = isMultiWindow()
 	return (
 		<>
 			<Helmet title="React DnD" meta={HEADER_META} link={HEADER_LINK}>
@@ -57,6 +59,7 @@ export const Layout: React.FC<LayoutProps> = memo(function Layout(props) {
 				backend={touchBackend ? TouchBackend : HTML5Backend}
 				options={touchBackend ? touchBackendOptions : undefined}
 				debugMode={debugMode}
+				multiWindow={multiWindow}
 			>
 				<ContentContainer>
 					<PageBody hasSidebar={sitepath !== '/about'}>

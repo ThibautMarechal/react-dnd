@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { memo } from 'react'
 import { BackendFactory, DragDropManager } from 'dnd-core'
-import { DndContext, createDndContext } from './DndContext'
+import { DndContext, createDndContext, DndContextType } from './DndContext'
 
 export type DndProviderProps<BackendContext, BackendOptions> =
 	| {
@@ -12,6 +12,7 @@ export type DndProviderProps<BackendContext, BackendOptions> =
 			context?: BackendContext
 			options?: BackendOptions
 			debugMode?: boolean
+			multiWindow?: boolean
 	  }
 
 let refCount = 0
@@ -21,7 +22,7 @@ let refCount = 0
  */
 export const DndProvider: React.FC<DndProviderProps<any, any>> = memo(
 	({ children, ...props }) => {
-		const [manager, isGlobalInstance] = getDndContextValue(props) // memoized from props
+		const [dndContext, isGlobalInstance] = getDndContextValue(props) // memoized from props
 
 		/**
 		 * If the global context was used to store the DND context
@@ -42,29 +43,35 @@ export const DndProvider: React.FC<DndProviderProps<any, any>> = memo(
 						context[instanceSymbol] = null
 					}
 				}
+				dndContext.dragDropManager?.dispose?.()
 			}
 		}, [])
 
-		return <DndContext.Provider value={manager}>{children}</DndContext.Provider>
+		return (
+			<DndContext.Provider value={dndContext}>{children}</DndContext.Provider>
+		)
 	},
 )
 DndProvider.displayName = 'DndProvider'
 
-function getDndContextValue(props: DndProviderProps<any, any>) {
+function getDndContextValue(
+	props: DndProviderProps<any, any>,
+): [DndContextType, boolean] {
 	if ('manager' in props) {
-		const manager = { dragDropManager: props.manager }
-		return [manager, false]
+		const dndContext = { dragDropManager: props.manager }
+		return [dndContext, false]
 	}
 
-	const manager = createSingletonDndContext(
+	const dndContext = createSingletonDndContext(
 		props.backend,
 		props.context,
 		props.options,
 		props.debugMode,
+		props.multiWindow,
 	)
 	const isGlobalInstance = !props.context
 
-	return [manager, isGlobalInstance]
+	return [dndContext, isGlobalInstance]
 }
 
 const instanceSymbol = Symbol.for('__REACT_DND_CONTEXT_INSTANCE__')
@@ -73,12 +80,19 @@ function createSingletonDndContext<BackendContext, BackendOptions>(
 	context: BackendContext = getGlobalContext(),
 	options: BackendOptions,
 	debugMode?: boolean,
+	multiWindow?: boolean,
 ) {
 	const ctx = context as any
 	if (!ctx[instanceSymbol]) {
-		ctx[instanceSymbol] = createDndContext(backend, context, options, debugMode)
+		ctx[instanceSymbol] = createDndContext(
+			backend,
+			context,
+			options,
+			debugMode,
+			multiWindow,
+		)
 	}
-	return ctx[instanceSymbol]
+	return ctx[instanceSymbol] as DndContextType
 }
 
 declare const global: any

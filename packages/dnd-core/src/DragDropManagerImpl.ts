@@ -1,6 +1,6 @@
 import { createStore, Store, Action } from 'redux'
 import { reduce } from './reducers'
-import { createDragDropActions } from './actions/dragDrop'
+import { createDragDropActions, END_DRAG, HOVER } from './actions/dragDrop'
 import { DragDropMonitorImpl } from './DragDropMonitorImpl'
 import { HandlerRegistryImpl } from './HandlerRegistryImpl'
 import {
@@ -8,7 +8,7 @@ import {
 	Backend,
 	DragDropActions,
 	DragDropMonitor,
-	DragDropManager,
+	DisposableDragDropManager,
 	HandlerRegistry,
 } from './interfaces'
 import { State } from './reducers'
@@ -30,20 +30,61 @@ function makeStoreInstance(debugMode: boolean): Store<State> {
 	)
 }
 
-export class DragDropManagerImpl implements DragDropManager {
+export class DragDropManagerImpl implements DisposableDragDropManager {
 	private store: Store<State>
 	private monitor: DragDropMonitor
 	private backend: Backend | undefined
 	private isSetUp = false
+	private broadcastChannel?: BroadcastChannel
 
-	public constructor(debugMode = false) {
-		const store = makeStoreInstance(debugMode)
+	public constructor(debugMode = false, multiWindow = false) {
+		const store = this.makeStoreInstance(debugMode, multiWindow)
 		this.store = store
 		this.monitor = new DragDropMonitorImpl(
 			store,
 			new HandlerRegistryImpl(store),
 		)
 		store.subscribe(this.handleRefCountChange)
+	}
+
+	private makeStoreInstance(
+		debugMode: boolean,
+		multiWindow: boolean,
+	): Store<State> {
+		const store = makeStoreInstance(debugMode)
+		// Verify that BroadcastChannel is supported
+		const useBroadcastChannel =
+			multiWindow && 'BroadcastChannel' in (window ?? {})
+		if (useBroadcastChannel) {
+			this.broadcastChannel = new BroadcastChannel('react-dnd')
+			this.broadcastChannel.onmessage = (message) => {
+				if (this.isSetUp) {
+					store.dispatch(message.data)
+				}
+			}
+		}
+
+		return {
+			...store,
+			dispatch: (action) => {
+				if (this.isSetUp && action.type !== HOVER && useBroadcastChannel) {
+					this.broadcastChannel?.postMessage(action)
+				}
+				if (action.type === END_DRAG) {
+					if (useBroadcastChannel) {
+						// We need to wait the DROP event that may come from another window before dispatching the END_DRAG
+						// Otherwise we cannot access the dropResult in the monitor (END_DRAG event delete the drop result from the state)
+						setTimeout(() => {
+							this.notifySourceDragEnd()
+							store.dispatch(action)
+						}, 25)
+						return action
+					}
+					this.notifySourceDragEnd()
+				}
+				return store.dispatch(action)
+			},
+		}
 	}
 
 	public receiveBackend(backend: Backend): void {
@@ -92,6 +133,22 @@ export class DragDropManagerImpl implements DragDropManager {
 
 	public dispatch(action: Action<any>): void {
 		this.store.dispatch(action)
+	}
+
+	public dispose(): void {
+		this.broadcastChannel?.close()
+	}
+
+	private notifySourceDragEnd() {
+		const registry = this.getRegistry()
+		const sourceId = this.monitor.getSourceId()
+		if (sourceId != null) {
+			const source = registry.getSource(sourceId, true)
+			if (source) {
+				source.endDrag(this.monitor, sourceId)
+				registry.unpinSource()
+			}
+		}
 	}
 
 	private handleRefCountChange = (): void => {

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import {
-	DragDropManager,
+	DisposableDragDropManager,
 	BackendFactory,
 	createDragDropManager,
 } from 'dnd-core'
@@ -9,7 +9,7 @@ import {
  * The React context type
  */
 export interface DndContextType {
-	dragDropManager: DragDropManager | undefined
+	dragDropManager?: DisposableDragDropManager
 }
 
 /**
@@ -29,6 +29,7 @@ export function createDndContext<BackendContext, BackendOptions>(
 	context?: BackendContext,
 	options?: BackendOptions,
 	debugMode?: boolean,
+	multiWindow?: boolean,
 ): DndContextType {
 	return {
 		dragDropManager: createDragDropManager(
@@ -36,6 +37,7 @@ export function createDndContext<BackendContext, BackendOptions>(
 			context,
 			options,
 			debugMode,
+			multiWindow,
 		),
 	}
 }

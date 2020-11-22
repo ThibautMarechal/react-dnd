@@ -4924,6 +4924,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
+      ["@types/uuid", [
+        ["npm:8.3.0", {
+          "packageLocation": "./.yarn/cache/@types-uuid-npm-8.3.0-60b441a3d7-620985aed8.zip/node_modules/@types/uuid/",
+          "packageDependencies": [
+            ["@types/uuid", "npm:8.3.0"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
       ["@types/vfile", [
         ["npm:3.0.2", {
           "packageLocation": "./.yarn/cache/@types-vfile-npm-3.0.2-5a6f4624c4-7434e3532c.zip/node_modules/@types/vfile/",
@@ -10532,9 +10541,11 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@react-dnd/asap", "npm:4.0.0"],
             ["@react-dnd/build", "workspace:packages/build"],
             ["@react-dnd/invariant", "npm:2.0.0"],
+            ["@types/uuid", "npm:8.3.0"],
             ["gulp", "npm:4.0.2"],
             ["react-dnd-test-backend", "portal:../backend-test::locator=dnd-core%40workspace%3Apackages%2Fdnd-core"],
-            ["redux", "npm:4.0.5"]
+            ["redux", "npm:4.0.5"],
+            ["uuid", "npm:8.3.1"]
           ],
           "linkType": "SOFT",
         }]
@@ -28884,6 +28895,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/uuid-npm-8.3.0-2f98335399-a2bdb8a3eb.zip/node_modules/uuid/",
           "packageDependencies": [
             ["uuid", "npm:8.3.0"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:8.3.1", {
+          "packageLocation": "./.yarn/cache/uuid-npm-8.3.1-8a5b02e900-6a5d07c556.zip/node_modules/uuid/",
+          "packageDependencies": [
+            ["uuid", "npm:8.3.1"]
           ],
           "linkType": "HARD",
         }]

@@ -189,6 +189,10 @@ export interface DragDropManager {
 	dispatch(action: any): void
 }
 
+export interface DisposableDragDropManager extends DragDropManager {
+	dispose?(): void
+}
+
 export type BackendFactory = (
 	manager: DragDropManager,
 	globalContext?: any,
