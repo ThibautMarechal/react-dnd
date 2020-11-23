@@ -13,6 +13,8 @@ import {
 import { DragDropManagerImpl } from '../DragDropManagerImpl'
 import { DragDropManager, HandlerRegistry } from '../interfaces'
 import { isString } from '../utils/js_utils'
+import { addSource } from '../actions/registry'
+import { BEGIN_DRAG, PUBLISH_DRAG_SOURCE } from '../actions/dragDrop'
 
 describe('DragDropManager', () => {
 	let manager: DragDropManager
@@ -684,5 +686,37 @@ describe('DragDropManager', () => {
 				expect(() => backend.simulateHover([targetId, sourceId])).toThrow()
 			})
 		})
+	})
+	it('allow dragging from another window', () => {
+		manager = new DragDropManagerImpl()
+		backend = TestBackend(manager, null, null) as ITestBackend
+		;(manager as any).receiveBackend(backend)
+		registry = manager.getRegistry()
+
+		const source = new NormalSource()
+		const target = new NormalTarget()
+		const targetId = registry.addTarget(Types.FOO, target)
+
+		// Start dragging from another window
+		const anotherWindow = new BroadcastChannel('react-dnd')
+		anotherWindow.postMessage(addSource('S01'))
+		anotherWindow.postMessage({
+			type: BEGIN_DRAG,
+			payload: {
+				itemType: Types.FOO,
+				item: source,
+				sourceId: 'S01',
+				clientOffset: null,
+				sourceClientOffset: null,
+				isSourcePublic: false,
+			},
+		})
+		anotherWindow.postMessage({ type: PUBLISH_DRAG_SOURCE })
+
+		// Dropping to the current window
+		backend.simulateHover([targetId])
+		backend.simulateDrop()
+		expect(target.didCallHover).toBe(true)
+		expect(target.dropResult).toEqual(source)
 	})
 })

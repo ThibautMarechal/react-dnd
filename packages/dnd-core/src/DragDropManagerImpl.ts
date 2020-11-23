@@ -1,6 +1,12 @@
-import { createStore, Store, Action } from 'redux'
+import { createStore, Store, Action, AnyAction } from 'redux'
 import { reduce } from './reducers'
-import { createDragDropActions, END_DRAG, HOVER } from './actions/dragDrop'
+import {
+	BEGIN_DRAG,
+	createDragDropActions,
+	END_DRAG,
+	HOVER,
+	INIT_COORDS,
+} from './actions/dragDrop'
 import { DragDropMonitorImpl } from './DragDropMonitorImpl'
 import { HandlerRegistryImpl } from './HandlerRegistryImpl'
 import {
@@ -30,12 +36,44 @@ function makeStoreInstance(debugMode: boolean): Store<State> {
 	)
 }
 
+function noOffsetAction(action: AnyAction): AnyAction {
+	if (action.type === HOVER) {
+		return {
+			type: HOVER,
+			payload: {
+				targetIds: action.payload.targetIds,
+				clientOffset: null,
+			},
+		}
+	}
+	if (action.type === BEGIN_DRAG) {
+		return {
+			type: BEGIN_DRAG,
+			payload: {
+				...action.payload,
+				clientOffset: null,
+				sourceClientOffset: null,
+			},
+		}
+	}
+	if (action.type === INIT_COORDS) {
+		return {
+			type: INIT_COORDS,
+			payload: {
+				clientOffset: null,
+				sourceClientOffset: null,
+			},
+		}
+	}
+	return action
+}
+
 export class DragDropManagerImpl implements DisposableDragDropManager {
 	private store: Store<State>
 	private monitor: DragDropMonitor
 	private backend: Backend | undefined
 	private isSetUp = false
-	private broadcastChannel?: BroadcastChannel
+	private broadcastChannel: BroadcastChannel | null = null
 
 	public constructor(debugMode = false, multiWindow = false) {
 		const store = this.makeStoreInstance(debugMode, multiWindow)
@@ -67,8 +105,8 @@ export class DragDropManagerImpl implements DisposableDragDropManager {
 		return {
 			...store,
 			dispatch: (action) => {
-				if (this.isSetUp && action.type !== HOVER && useBroadcastChannel) {
-					this.broadcastChannel?.postMessage(action)
+				if (this.isSetUp && useBroadcastChannel) {
+					this.broadcastChannel?.postMessage(noOffsetAction(action))
 				}
 				if (action.type === END_DRAG) {
 					if (useBroadcastChannel) {
@@ -137,6 +175,7 @@ export class DragDropManagerImpl implements DisposableDragDropManager {
 
 	public dispose(): void {
 		this.broadcastChannel?.close()
+		this.broadcastChannel = null
 	}
 
 	private notifySourceDragEnd() {
